@@ -9,15 +9,12 @@ from fastapi.responses import JSONResponse
 from .core.config import settings
 from .api import auth, chat, conversations
 from .utils.data_cleanup import data_cleanup
+from .utils.logger import setup_logger, get_logger
 import asyncio
 import logging
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+logger = setup_logger("symphonize", logging.INFO)
 
 # Create FastAPI app
 app = FastAPI(
