@@ -1,0 +1,47 @@
+# FastAPI Framework
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Pydantic for data validation
+pydantic
+pydantic-settings 
+
+# CORS middleware
+python-jose[cryptography] 
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# Supabase
+supabase
+
+# AI Models
+google-generativeai
+openai  
+ollama 
+
+# HTTP requests
+httpx 
+requests 
+
+# Environment variables
+python-dotenv 
+
+# Date/Time utilities
+python-dateutil 
+
+# Async support
+asyncio 
+aiofiles 
+
+# JSON handling
+orjson 
+
+
+email-validator
+
+
+pypdf2
+python-docx
+pillow
+pytesseract
