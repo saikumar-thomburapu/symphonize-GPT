@@ -1,15 +1,41 @@
 /**
  * API Client for Backend Communication
- * 
- * Contains all functions to communicate with FastAPI backend.
+ * Auto-detects backend URL based on current server
  */
 
 import axios from 'axios';
 
-// Get backend API URL from environment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Smart backend URL detection
+function getBackendURL() {
+  // If NEXT_PUBLIC_API_URL is set to 'auto', detect it
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl && envUrl !== 'auto') {
+    return envUrl;
+  }
+  
+  // Auto-detect based on current browser location
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  
+  // Detect if on 154 or 161
+  if (hostname.includes('154') || hostname === 'localhost') {
+    // Development (154)
+    return `http://${hostname}:8000`;
+  } else if (hostname.includes('161')) {
+    // Production (161)
+    return `http://${hostname}:8000`;
+  }
+  
+  // Fallback
+  return 'http://localhost:8000';
+}
 
-// Create axios instance with default config
+// Get backend API URL
+const API_BASE_URL = getBackendURL();
+
+console.log('🔧 Backend API URL:', API_BASE_URL);
+
+// Rest of your api.js code stays the same...
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -17,6 +43,9 @@ const apiClient = axios.create({
   },
   timeout: 30000,
 });
+
+ 
+
 
 // Request interceptor - Add auth token
 apiClient.interceptors.request.use(

@@ -25,22 +25,56 @@ app = FastAPI(
     redoc_url="/redoc"  # ReDoc at /redoc
 )
 
+
+from .core.config import settings
+
 # Configure CORS (allows frontend to call backend)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Local
         "http://localhost:3000",
-        settings.FRONTEND_URL,
-        # Add your server IPs here for remote access
-        "http://192.168.200.154:3000",  # ← Your server IP
+        "http://localhost:8001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:8001",
         
+        # Development (154)
+        "http://192.168.200.154:3000",
+        "http://192.168.200.154:8001",
+        
+        # Production (161)
+        "http://192.168.200.161:3000",
+        "http://192.168.200.161:8001",
+        
+        # From config (auto-detected)
+        settings.FRONTEND_URL if settings.FRONTEND_URL != "auto" else "*",
     ],
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, OPTIONS, etc.)
-    allow_headers=["*"],  # Allow all headers
-    expose_headers=["*"],  # ✅ ADDED: Expose all headers for frontend
-    max_age=600,  # Cache CORS preflight for 10 minutes
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=600,
 )
+
+
+
+# # Configure CORS (allows frontend to call backend)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=[
+#         "http://localhost:8001",
+        
+#         settings.FRONTEND_URL,
+#         # Add your server IPs here for remote access
+#         "http://192.168.200.161:8001",  # ← Your server IP
+        
+#     ],
+#     allow_credentials=True,
+#     allow_methods=["*"],  # Allow all HTTP methods (GET, POST, PUT, DELETE, OPTIONS, etc.)
+#     allow_headers=["*"],  # Allow all headers
+#     expose_headers=["*"],  # ✅ ADDED: Expose all headers for frontend
+#     max_age=600,  # Cache CORS preflight for 10 minutes
+# )
 
 # Include routers (API endpoints)
 app.include_router(auth.router)  # /auth/signup, /auth/login, etc.
