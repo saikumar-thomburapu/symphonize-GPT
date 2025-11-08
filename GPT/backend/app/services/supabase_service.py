@@ -103,6 +103,27 @@ class SupabaseService:
         
         return verify_password(password, user.get("password_hash", ""))
     
+    async def update_user_password(self, user_id: str, hashed_password: str) -> bool:
+        """
+        Update user's password in database.
+        
+        Args:
+            user_id: User ID
+            hashed_password: New hashed password
+        
+        Returns:
+            True if successful
+        """
+        try:
+            self.service_client.table("users").update({
+                "password_hash": hashed_password,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", user_id).execute()
+            
+            return True
+        except Exception as e:
+            raise Exception(f"Error updating password: {str(e)}")
+
     # ==================== CONVERSATION OPERATIONS ====================
     
     async def create_conversation(self, user_id: str, title: Optional[str] = None) -> Dict[str, Any]:

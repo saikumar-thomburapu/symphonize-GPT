@@ -135,6 +135,11 @@ class Settings(BaseSettings):
     # Data retention
     DATA_RETENTION_DAYS: int = 30
     
+    # Add to Settings class
+    SENDER_EMAIL: Optional[str] = None
+    SENDER_PASSWORD: Optional[str] = None
+
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
