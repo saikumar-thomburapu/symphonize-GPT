@@ -49,7 +49,7 @@ function ResetPasswordContent() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault();  // ✅ This is already there - Enter key WORKS!
     setGeneralError('');
 
     if (!validate()) return;
@@ -61,9 +61,22 @@ function ResetPasswordContent() {
     setLoading(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL === 'auto' 
-        ? 'http://localhost:8000' 
-        : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+      // ✅ Smart URL detection (same as forgot password)
+      let backendUrl;
+      
+      if (typeof window !== 'undefined') {
+        const currentHost = window.location.hostname;
+        
+        if (currentHost.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+          backendUrl = `http://${currentHost}:8000`;
+        } else if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          backendUrl = 'http://localhost:8000';
+        } else {
+          backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        }
+      } else {
+        backendUrl = 'http://localhost:8000';
+      }
 
       const response = await fetch(`${backendUrl}/auth/reset-password?token=${encodeURIComponent(token)}&new_password=${encodeURIComponent(newPassword)}`, {
         method: 'POST',
@@ -75,7 +88,7 @@ function ResetPasswordContent() {
       if (response.ok) {
         setSuccess(true);
         
-        // Redirect to login after 3 seconds
+        // Redirect after 3 seconds
         setTimeout(() => {
           router.push('/login');
         }, 3000);

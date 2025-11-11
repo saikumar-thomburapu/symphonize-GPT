@@ -197,13 +197,18 @@ export default function ChatInterface({ conversationId }) {
         ) : messages.length === 0 && !isStreaming ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center max-w-md px-4">
-              <video 
-                autoPlay 
-                loop 
-                muted 
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                onLoadedMetadata={(e) => {
+                e.target.currentTime = 1; // ensures full duration playback
+                }}
                 className="w-20 h-20 mx-auto mb-6 opacity-60 rounded-full"
               >
-                <source src="/videos/symphonize_logo_animation.mp4" type="video/mp4" />
+                <source src="  /videos/symphonize_logo_animation.mp4" type="video/mp4" />
               </video>
               <h3 className="text-2xl font-bold text-white mb-3">Start Your Conversation</h3>
               <p className="text-[#b3d4f7] text-lg mb-2">

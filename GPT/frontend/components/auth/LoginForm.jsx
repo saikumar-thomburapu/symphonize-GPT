@@ -80,6 +80,7 @@ export default function LoginForm() {
   };
 
   // ✅ FIXED: Send email as query parameter, not body
+  // ✅ FIXED: Works for both localhost and external IPs
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setForgotGeneralError('');
@@ -89,11 +90,31 @@ export default function LoginForm() {
     setForgotLoading(true);
     
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL === 'auto' 
-        ? 'http://localhost:8000' 
-        : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000');
+      // ✅ Smart URL detection for external users
+      let backendUrl;
       
-      // ✅ CORRECT: Send email as query parameter
+      if (typeof window !== 'undefined') {
+        const currentHost = window.location.hostname;
+        
+        // If accessing via IP address
+        if (currentHost.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+          backendUrl = `http://${currentHost}:8000`;
+        } 
+        // If localhost
+        else if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+          backendUrl = 'http://localhost:8000';
+        }
+        // Fallback
+        else {
+          backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        }
+      } else {
+        backendUrl = 'http://localhost:8000';
+      }
+      
+      console.log('🔧 Using backend URL:', backendUrl);
+      
+      // Send request
       const response = await fetch(`${backendUrl}/auth/forgot-password?email=${encodeURIComponent(forgotEmail)}`, {
         method: 'POST',
         headers: { 
@@ -112,44 +133,47 @@ export default function LoginForm() {
         }, 3000);
       } else {
         const error = await response.json();
+        // ✅ Show specific error message
         setForgotGeneralError(error.detail || 'Failed to send reset email');
       }
     } catch (error) {
       console.error('Forgot password error:', error);
-      setForgotGeneralError('Network error. Please try again.');
+      setForgotGeneralError('Network error. Please check your connection and try again.');
     } finally {
       setForgotLoading(false);
     }
   };
 
 
-  // ✅ FORGOT PASSWORD FORM
-  if (showForgotPassword) {
-    return (
-      <div className="space-y-6">
-        {/* Back Button */}
-        <button
-          type="button"
-          onClick={() => {
-            setShowForgotPassword(false);
-            setForgotEmail('');
-            setForgotErrors({});
-            setForgotGeneralError('');
-            setForgotSuccess(false);
-          }}
-          className="text-sm text-primary-400 hover:text-primary-300 font-medium transition-colors"
-        >
-          ← Back to Login
-        </button>
+  // ✅ FORGOT PASSWORD FORM - FIXED with <form> tag
+if (showForgotPassword) {
+  return (
+    <div className="space-y-6">
+      {/* Back Button */}
+      <button
+        type="button"
+        onClick={() => {
+          setShowForgotPassword(false);
+          setForgotEmail('');
+          setForgotErrors({});
+          setForgotGeneralError('');
+          setForgotSuccess(false);
+        }}
+        className="text-sm text-primary-400 hover:text-primary-300 font-medium transition-colors"
+      >
+        ← Back to Login
+      </button>
 
-        {/* Header */}
-        <div className="text-center mb-4">
-          <h2 className="text-2xl font-bold text-dark-text mb-2">Reset Password</h2>
-          <p className="text-sm text-dark-textSecondary">
-            Enter your email to receive reset instructions
-          </p>
-        </div>
+      {/* Header */}
+      <div className="text-center mb-4">
+        <h2 className="text-2xl font-bold text-dark-text mb-2">Reset Password</h2>
+        <p className="text-sm text-dark-textSecondary">
+          Enter your email to receive reset instructions
+        </p>
+      </div>
 
+      {/* ✅ WRAPPED IN FORM TAG - Enter key now works! */}
+      <form onSubmit={handleForgotPassword} className="space-y-6">
         {/* Success Message */}
         {forgotSuccess && (
           <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
@@ -176,20 +200,88 @@ export default function LoginForm() {
           disabled={forgotLoading || forgotSuccess}
         />
 
-        {/* Submit Button */}
+        {/* Submit Button - Enter key triggers form submit */}
         <Button
           type="submit"
           variant="primary"
           className="w-full"
           loading={forgotLoading}
           disabled={forgotLoading || forgotSuccess}
-          onClick={handleForgotPassword}
         >
           Send Reset Link
         </Button>
-      </div>
-    );
-  }
+      </form>
+    </div>
+  );
+}
+
+  // // ✅ FORGOT PASSWORD FORM
+  // if (showForgotPassword) {
+  //   return (
+  //     <div className="space-y-6">
+  //       {/* Back Button */}
+  //       <button
+  //         type="button"
+  //         onClick={() => {
+  //           setShowForgotPassword(false);
+  //           setForgotEmail('');
+  //           setForgotErrors({});
+  //           setForgotGeneralError('');
+  //           setForgotSuccess(false);
+  //         }}
+  //         className="text-sm text-primary-400 hover:text-primary-300 font-medium transition-colors"
+  //       >
+  //         ← Back to Login
+  //       </button>
+
+  //       {/* Header */}
+  //       <div className="text-center mb-4">
+  //         <h2 className="text-2xl font-bold text-dark-text mb-2">Reset Password</h2>
+  //         <p className="text-sm text-dark-textSecondary">
+  //           Enter your email to receive reset instructions
+  //         </p>
+  //       </div>
+
+  //       {/* Success Message */}
+  //       {forgotSuccess && (
+  //         <div className="bg-green-500/10 border border-green-500/50 text-green-400 px-4 py-3 rounded-lg text-sm">
+  //           ✅ Check your email for password reset link!
+  //         </div>
+  //       )}
+
+  //       {/* Error Message */}
+  //       {forgotGeneralError && (
+  //         <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg text-sm">
+  //           {forgotGeneralError}
+  //         </div>
+  //       )}
+
+  //       {/* Email Input */}
+  //       <Input
+  //         label="Email"
+  //         type="email"
+  //         placeholder="you@example.com"
+  //         value={forgotEmail}
+  //         onChange={(e) => setForgotEmail(e.target.value)}
+  //         error={forgotErrors.email}
+  //         required
+  //         disabled={forgotLoading || forgotSuccess}
+  //       />
+
+  //       {/* Submit Button */}
+  //       <Button
+  //         type="submit"
+  //         variant="primary"
+  //         className="w-full"
+  //         loading={forgotLoading}
+  //         disabled={forgotLoading || forgotSuccess}
+  //         onClick={handleForgotPassword}
+  //       >
+  //         Send Reset Link
+  //       </Button>
+  //     </div>
+  //   );
+  // }
 
   // ✅ MAIN LOGIN FORM
   return (

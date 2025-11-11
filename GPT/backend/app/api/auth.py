@@ -150,17 +150,12 @@ async def logout(current_user: dict = Depends(get_current_user)):
     """Logout endpoint."""
     return {"message": "Logged out successfully"}
 
-# ✅ FORGOT PASSWORD ENDPOINT
+# ✅ FIXED: Returns specific error if email not registered
 @router.post("/forgot-password")
 async def forgot_password(email: str):
     """
     Request password reset email.
-    
-    Steps:
-    1. Validate email domain
-    2. Check if user exists
-    3. Generate 1-hour token
-    4. Send reset email
+    Returns error if email not registered.
     """
     try:
         logger.info(f"🔔 Password reset requested for: {email}")
@@ -177,12 +172,13 @@ async def forgot_password(email: str):
         # Check if user exists
         user = await supabase_service.get_user_by_email(email)
         
+        # ✅ NEW: Return error if user not found
         if not user:
-            logger.info(f"⚠️ User not found: {email}")
-            # Don't reveal if email exists (security)
-            return {
-                "message": "If email exists, you will receive a password reset link"
-            }
+            logger.warning(f"⚠️ User not found: {email}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Email not registered. Please sign up first."
+            )
         
         # Generate 1-hour token
         reset_token = create_access_token(

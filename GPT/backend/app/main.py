@@ -31,24 +31,25 @@ from .core.config import settings
 # Configure CORS (allows frontend to call backend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        # Local
-        "http://localhost:3000",
-        "http://localhost:8001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8001",
+    allow_origins=["*"],
+    # allow_origins=[
+    #     # Local
+    #     "http://localhost:3000",
+    #     "http://localhost:8001",
+    #     "http://127.0.0.1:3000",
+    #     "http://127.0.0.1:8001",
         
-        # Development (154)
-        "http://192.168.200.154:3000",
-        "http://192.168.200.154:8001",
+    #     # Development (154)
+    #     "http://192.168.200.154:3000",
+    #     "http://192.168.200.154:8001",
         
-        # Production (161)
-        "http://192.168.200.161:3000",
-        "http://192.168.200.161:8001",
+    #     # Production (161)
+    #     "http://192.168.200.161:3000",
+    #     "http://192.168.200.161:8001",
         
-        # From config (auto-detected)
-        settings.FRONTEND_URL if settings.FRONTEND_URL != "auto" else "*",
-    ],
+    #     # From config (auto-detected)
+    #     settings.FRONTEND_URL if settings.FRONTEND_URL != "auto" else "*",
+    # ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
