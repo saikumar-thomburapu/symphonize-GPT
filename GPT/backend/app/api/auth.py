@@ -2,9 +2,10 @@
 Authentication API endpoints - Login, Signup, Token verification.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timedelta
+from typing import Optional
 import logging
 
 from ..models.user import UserSignup, UserLogin, TokenResponse, UserResponse
@@ -15,7 +16,7 @@ from ..core.config import settings
 from ..utils.validators import validate_email_domain
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 logger = logging.getLogger(__name__)
 
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -135,6 +136,67 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication failed"
         )
+
+
+async def get_current_user_flexible(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    api_key: Optional[str] = Header(None, alias="X-API-Key")
+) -> dict:
+    """
+    Flexible authentication: supports both JWT tokens and API keys.
+    
+    Priority:
+    1. Try JWT token first (if provided)
+    2. Fall back to API key (if provided)
+    3. Raise 401 if neither works
+    
+    Args:
+        credentials: Optional JWT bearer token
+        api_key: Optional API key from X-API-Key header
+        
+    Returns:
+        User data dictionary
+        
+    Raises:
+        HTTPException: 401 if authentication fails
+    """
+    # Try JWT token first
+    if credentials:
+        try:
+            token = credentials.credentials
+            payload = decode_access_token(token)
+            
+            if payload:
+                user_id = payload.get("sub")
+                if user_id:
+                    user = await supabase_service.get_user_by_id(user_id)
+                    if user:
+                        logger.info(f"✅ Authenticated via JWT: {user['id']}")
+                        return user
+        except Exception as e:
+            logger.debug(f"JWT auth failed: {str(e)}")
+            pass  # Fall through to API key
+    
+    # Try API key
+    if api_key:
+        from ..services.api_key_service import api_key_service
+        
+        user = await api_key_service.validate_api_key(api_key)
+        if user:
+            logger.info(f"✅ Authenticated via API key: {user['id']}")
+            return user
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired API key"
+            )
+    
+    # No valid authentication
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required. Provide either Bearer token or X-API-Key header"
+    )
+
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):

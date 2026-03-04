@@ -3,19 +3,55 @@ Chat API endpoints - Multi-model support with Image & File handling
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File, Form
-from typing import List 
+from typing import List, Optional
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from ..models.chat import ChatRequest
 from ..services.supabase_service import supabase_service
 from ..services.ollama_service import ollama_service
 from ..services.file_service import file_service
 from ..utils.context_manager import context_manager
-from ..api.auth import get_current_user
+from ..api.auth import get_current_user, get_current_user_flexible
 import json
 import logging
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
 logger = logging.getLogger(__name__)
+
+# ─────────────────────────────────────────────
+# Simple Gemini-style models for /v1/generate
+# ─────────────────────────────────────────────
+
+class MessageItem(BaseModel):
+    """A single message in a conversation history."""
+    role: str   # "user" or "assistant"
+    content: str
+
+class GenerateRequest(BaseModel):
+    """
+    Simple request — just like Gemini/OpenAI.
+    
+    Minimal usage:
+        {"message": "Hello!"}
+    
+    With history (multi-turn conversation):
+        {
+          "message": "What did I just say?",
+          "history": [
+            {"role": "user", "content": "My name is Sai"},
+            {"role": "assistant", "content": "Nice to meet you, Sai!"}
+          ]
+        }
+    """
+    message: str
+    model: Optional[str] = "deepseek-v2:16b"
+    history: Optional[List[MessageItem]] = []
+
+class GenerateResponse(BaseModel):
+    """Simple response — just the AI reply text."""
+    reply: str
+    model: str
+
 
 # Available models
 AVAILABLE_MODELS = {
@@ -25,8 +61,88 @@ AVAILABLE_MODELS = {
 
 DEFAULT_MODEL = "deepseek-v2:16b"
 
+
+# ─────────────────────────────────────────────────────────────────
+# /v1/generate  — Gemini/OpenAI-style simple endpoint
+#
+# External usage (just like how devs use Gemini API):
+#
+#   import requests
+#   response = requests.post(
+#       "http://<your-server>:8000/chat/v1/generate",
+#       headers={"X-API-Key": "sk_live_..."},
+#       json={"message": "Hello!"}
+#   )
+#   print(response.json()["reply"])
+# ─────────────────────────────────────────────────────────────────
+
+@router.post("/v1/generate", response_model=GenerateResponse, tags=["Simple API (Gemini-style)"])
+async def generate(
+    request: GenerateRequest,
+    current_user: dict = Depends(get_current_user_flexible)
+):
+    """
+    **Simple, stateless chat endpoint — use it just like Gemini or OpenAI API.**
+
+    - No `conversation_id` needed
+    - No login needed — just your `X-API-Key` header
+    - Send a message, get a reply instantly
+    - Optionally pass `history` for multi-turn conversations
+
+    **Minimal example:**
+    ```json
+    { "message": "What is Python?" }
+    ```
+
+    **With conversation history:**
+    ```json
+    {
+      "message": "What did I say my name was?",
+      "history": [
+        {"role": "user",      "content": "My name is Sai"},
+        {"role": "assistant", "content": "Nice to meet you, Sai!"}
+      ]
+    }
+    ```
+    """
+    try:
+        model = request.model if request.model in AVAILABLE_MODELS else DEFAULT_MODEL
+        
+        logger.info(f"🤖 /v1/generate — user:{current_user['id']} model:{model} msg:{request.message[:60]}")
+
+        # Build messages list: system prompt + history + new message
+        messages = [
+            {"role": "system", "content": context_manager.create_system_prompt()}
+        ]
+
+        # Append any conversation history the caller provides
+        for h in (request.history or []):
+            messages.append({"role": h.role, "content": h.content})
+
+        # Append the current user message
+        messages.append({"role": "user", "content": request.message})
+
+        # Call Ollama and wait for full response (non-streaming, simple like Gemini)
+        reply = await ollama_service.generate_response(
+            messages=messages,
+            model_name=model
+        )
+
+        logger.info(f"✅ /v1/generate — replied {len(reply)} chars")
+
+        return GenerateResponse(reply=reply, model=model)
+
+    except Exception as e:
+        logger.error(f"❌ /v1/generate error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Generation error: {str(e)}"
+        )
+
+
 @router.get("/models")
-async def get_available_models(current_user: dict = Depends(get_current_user)):
+
+async def get_available_models(current_user: dict = Depends(get_current_user_flexible)):
     """Get list of available models."""
     return {
         "models": [
@@ -42,7 +158,7 @@ async def send_message_stream(
     message: str = Form(...),
     model: str = Form(DEFAULT_MODEL),
     files: List[UploadFile] = File(default=[]),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user_flexible)
 ):
     """Send message with optional file upload and get streaming response."""
     try:
@@ -78,10 +194,12 @@ async def send_message_stream(
         logger.info("✓ Conversation verified")
         
         # Process uploaded files
+        # Filter out empty/invalid entries (Swagger UI sends empty strings when no file selected)
+        valid_files = [f for f in files if hasattr(f, 'filename') and f.filename]
         file_contents = ""
         images_data = []
         
-        for uploaded_file in files:
+        for uploaded_file in valid_files:
             try:
                 file_bytes = await uploaded_file.read()
                 file_result = await file_service.process_file(
@@ -233,7 +351,7 @@ async def send_message_stream(
 @router.get("/history/{conversation_id}")
 async def get_conversation_history(
     conversation_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user_flexible)
 ):
     """Get conversation messages."""
     try:

@@ -77,11 +77,42 @@ CREATE TRIGGER update_conversations_updated_at
     EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
+-- API KEYS TABLE
+-- Stores API keys for programmatic access
+-- =====================================================
+CREATE TABLE IF NOT EXISTS api_keys (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    key_name VARCHAR(100) NOT NULL,
+    key_hash TEXT NOT NULL,
+    key_prefix VARCHAR(20) NOT NULL,  -- First 8 chars for identification (e.g., "sk_live_")
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for faster queries
+CREATE INDEX idx_api_keys_user_id ON api_keys(user_id);
+CREATE INDEX idx_api_keys_key_prefix ON api_keys(key_prefix);
+CREATE INDEX idx_api_keys_is_active ON api_keys(is_active);
+
+-- Apply trigger to api_keys table
+CREATE TRIGGER update_api_keys_updated_at
+    BEFORE UPDATE ON api_keys
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- =====================================================
 -- COMMENTS FOR DOCUMENTATION
 -- =====================================================
 COMMENT ON TABLE users IS 'User accounts for the chat application';
 COMMENT ON TABLE conversations IS 'Chat conversations - one per "New Chat"';
 COMMENT ON TABLE messages IS 'Individual messages within conversations';
+COMMENT ON TABLE api_keys IS 'API keys for programmatic access to the chat API';
 
 COMMENT ON COLUMN messages.role IS 'Message sender: user (human), assistant (AI), or system (instructions)';
 COMMENT ON COLUMN messages.model IS 'AI model that generated this message (e.g., gemini-1.5-flash, llama3.2)';
+COMMENT ON COLUMN api_keys.key_hash IS 'Bcrypt hash of the API key (never store plain text)';
+COMMENT ON COLUMN api_keys.key_prefix IS 'First 8-12 characters of key for identification (e.g., sk_live_abc)';

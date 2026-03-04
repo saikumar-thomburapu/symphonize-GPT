@@ -274,6 +274,127 @@ class SupabaseService:
         except Exception as e:
             raise Exception(f"Error fetching messages: {str(e)}")
     
+    # ==================== API KEY OPERATIONS ====================
+    
+    async def create_api_key_record(
+        self,
+        user_id: str,
+        key_name: str,
+        key_hash: str,
+        key_prefix: str,
+        expires_at: Optional[datetime] = None
+    ) -> Dict[str, Any]:
+        """
+        Create API key record in database.
+        
+        Args:
+            user_id: User ID who owns the key
+            key_name: Descriptive name for the key
+            key_hash: Hashed API key
+            key_prefix: Key prefix for identification
+            expires_at: Optional expiration datetime
+            
+        Returns:
+            API key record
+        """
+        key_id = str(uuid.uuid4())
+        now = datetime.utcnow().isoformat()
+        
+        try:
+            response = self.service_client.table("api_keys").insert({
+                "id": key_id,
+                "user_id": user_id,
+                "key_name": key_name,
+                "key_hash": key_hash,
+                "key_prefix": key_prefix,
+                "expires_at": expires_at.isoformat() if expires_at else None,
+                "is_active": True,
+                "created_at": now,
+                "updated_at": now
+            }).execute()
+            
+            return response.data[0] if response.data else None
+        except Exception as e:
+            raise Exception(f"Error creating API key record: {str(e)}")
+    
+    async def get_api_keys_by_prefix(self, key_prefix: str) -> List[Dict[str, Any]]:
+        """
+        Get all API keys with matching prefix.
+        
+        Args:
+            key_prefix: Key prefix to search for
+            
+        Returns:
+            List of matching API key records
+        """
+        try:
+            response = self.service_client.table("api_keys").select(
+                "*"
+            ).eq("key_prefix", key_prefix).execute()
+            
+            return response.data if response.data else []
+        except Exception as e:
+            raise Exception(f"Error fetching API keys by prefix: {str(e)}")
+    
+    async def get_user_api_keys(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all API keys for a user.
+        
+        Args:
+            user_id: User ID
+            
+        Returns:
+            List of API key records (without hashes)
+        """
+        try:
+            response = self.service_client.table("api_keys").select(
+                "id, key_name, key_prefix, created_at, updated_at, expires_at, last_used_at, is_active"
+            ).eq("user_id", user_id).order("created_at", desc=True).execute()
+            
+            return response.data if response.data else []
+        except Exception as e:
+            raise Exception(f"Error fetching user API keys: {str(e)}")
+    
+    async def update_api_key_last_used(self, key_id: str) -> bool:
+        """
+        Update the last_used_at timestamp for an API key.
+        
+        Args:
+            key_id: API key ID
+            
+        Returns:
+            True if successful
+        """
+        try:
+            self.service_client.table("api_keys").update({
+                "last_used_at": datetime.utcnow().isoformat()
+            }).eq("id", key_id).execute()
+            
+            return True
+        except Exception as e:
+            raise Exception(f"Error updating API key last used: {str(e)}")
+    
+    async def deactivate_api_key(self, key_id: str, user_id: str) -> bool:
+        """
+        Deactivate (revoke) an API key.
+        
+        Args:
+            key_id: API key ID
+            user_id: User ID (for authorization)
+            
+        Returns:
+            True if successful
+        """
+        try:
+            response = self.service_client.table("api_keys").update({
+                "is_active": False,
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", key_id).eq("user_id", user_id).execute()
+            
+            return len(response.data) > 0 if response.data else False
+        except Exception as e:
+            raise Exception(f"Error deactivating API key: {str(e)}")
+    
     # ==================== DATA CLEANUP ====================
     
     async def delete_old_user_data(self, days: int = 30) -> int:

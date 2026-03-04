@@ -7,7 +7,7 @@ from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from .core.config import settings
-from .api import auth, chat, conversations
+from .api import auth, chat, conversations, api_keys
 from .utils.data_cleanup import data_cleanup
 from .utils.logger import setup_logger, get_logger
 import asyncio
@@ -81,6 +81,7 @@ app.add_middleware(
 app.include_router(auth.router)  # /auth/signup, /auth/login, etc.
 app.include_router(chat.router)  # /chat/message, /chat/stream, etc.
 app.include_router(conversations.router)  # /conversations, etc.
+app.include_router(api_keys.router)  # /api-keys (NEW!)
 
 @app.on_event("startup")
 async def startup_event():
