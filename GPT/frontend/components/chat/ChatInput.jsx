@@ -4,13 +4,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Paperclip, X, FileText, Image as ImageIcon, File, Mic, ChevronDown } from 'lucide-react';
 import { transcribeAudio } from '@/lib/api';
 
-export default function ChatInput({ 
-  onSend, 
-  disabled = false, 
+export default function ChatInput({
+  onSend,
+  disabled = false,
   placeholder = "Type your message...",
   selectedModel = 'mistral:latest',
   availableModels = [],
-  onModelChange = () => {}
+  onModelChange = () => { }
 }) {
   const [message, setMessage] = useState('');
   const [attachedFiles, setAttachedFiles] = useState([]);
@@ -22,7 +22,7 @@ export default function ChatInput({
   const fileInputRef = useRef(null);
   const modelMenuRef = useRef(null);
   const recognitionRef = useRef(null);
-  
+
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -51,7 +51,7 @@ export default function ChatInput({
       }
     };
   }, []);
-  
+
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files || []);
     const validFiles = files.filter(file => {
@@ -66,14 +66,14 @@ export default function ChatInput({
       ];
       return validTypes.includes(file.type) && file.size <= 10 * 1024 * 1024;
     });
-    
+
     setAttachedFiles(prev => [...prev, ...validFiles]);
   };
-  
+
   const removeFile = (index) => {
     setAttachedFiles(prev => prev.filter((_, i) => i !== index));
   };
-  
+
   const getFileIcon = (file) => {
     if (file.type.startsWith('image/')) return <ImageIcon className="w-3 h-3" />;
     if (file.type === 'application/pdf') return <FileText className="w-3 h-3" />;
@@ -93,26 +93,26 @@ export default function ChatInput({
     setIsRecording(false);
     setTranscriptionStatus('');
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // If still recording, just stop
     if (isRecording) {
       stopRecording();
       return;
     }
-    
+
     // If message or files exist, send them
     if ((message.trim() || attachedFiles.length > 0) && !disabled) {
       await onSend(message.trim(), attachedFiles);
-      
+
       // Clear everything after sending
       setMessage('');
       setAttachedFiles([]);
       setJustTranscribed(false);
       setTranscriptionStatus('');
-      
+
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -121,17 +121,17 @@ export default function ChatInput({
       }
     }
   };
-  
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      
+
       // If still recording, stop it
       if (isRecording) {
         stopRecording();
         return;
       }
-      
+
       // If just transcribed OR message exists, send it (NOT toggle mic)
       if (justTranscribed || message.trim() || attachedFiles.length > 0) {
         console.log('📨 Sending message via Enter...');
@@ -162,7 +162,7 @@ export default function ChatInput({
       console.log('🎤 Starting speech recognition...');
       setTranscriptionStatus('🎤 Listening...');
       setJustTranscribed(false);
-      
+
       // Start speech recognition
       recognitionRef.current = transcribeAudio(
         null,
@@ -183,7 +183,7 @@ export default function ChatInput({
           setTimeout(() => setTranscriptionStatus(''), 3000);
         }
       );
-      
+
       setIsRecording(true);
     } catch (error) {
       console.error('Error starting voice:', error);
@@ -193,10 +193,13 @@ export default function ChatInput({
       setTimeout(() => setTranscriptionStatus(''), 3000);
     }
   };
-  
+
   return (
-    <form onSubmit={handleSubmit} className="border-t border-[#043850] bg-[#021e35] p-4">
-      <div className="max-w-6xl mx-auto">
+    <form onSubmit={handleSubmit}
+      className="border-t border-white/[0.05] p-4"
+      style={{ background: 'rgba(1,22,40,0.85)', backdropFilter: 'blur(16px)' }}
+    >
+      <div className="max-w-4xl mx-auto">
         {/* Attached Files Preview */}
         {attachedFiles.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
@@ -229,12 +232,19 @@ export default function ChatInput({
             {transcriptionStatus}
           </div>
         )}
-        
+
         {/* Input Area */}
         <div className="flex items-end gap-2">
           {/* Search Bar with Buttons INSIDE */}
-          <div className="flex-1 relative flex items-center bg-[#032a42] border border-[#043850] rounded-2xl px-4 py-3 focus-within:ring-2 focus-within:ring-[#3e78c2] focus-within:border-[#3e78c2] transition-all">
-            
+          <div className="flex-1 relative flex items-center rounded-2xl px-4 py-3 transition-all duration-200"
+            style={{
+              background: 'rgba(3,42,66,0.7)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)'
+            }}
+            onFocus={() => { }}
+          >
+
             {/* Text Input */}
             <textarea
               ref={textareaRef}
@@ -250,7 +260,7 @@ export default function ChatInput({
 
             {/* RIGHT SIDE BUTTONS - INSIDE SEARCH BAR */}
             <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-              
+
               {/* Model Selector */}
               <div className="relative" ref={modelMenuRef}>
                 <button
@@ -263,9 +273,10 @@ export default function ChatInput({
                   <ChevronDown className="w-3 h-3" />
                 </button>
 
-                {/* Model Menu - Professional Dropdown */}
+                {/* Model Menu - Glass Dropdown */}
                 {showModelMenu && (
-                  <div className="absolute right-0 bottom-full mb-2 w-48 bg-[#032a42] border border-[#043850] rounded-lg shadow-lg z-50">
+                  <div className="absolute right-0 bottom-full mb-2 w-52 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-in"
+                    style={{ background: 'rgba(2,30,53,0.95)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="p-1.5">
                       {availableModels && availableModels.length > 0 ? (
                         availableModels.map(model => (
@@ -277,11 +288,10 @@ export default function ChatInput({
                               onModelChange(model.id);
                               setShowModelMenu(false);
                             }}
-                            className={`w-full text-left px-3 py-2 text-xs transition-colors rounded ${
-                              selectedModel === model.id
+                            className={`w-full text-left px-3 py-2 text-xs transition-colors rounded ${selectedModel === model.id
                                 ? 'bg-[#3e78c2] text-white font-medium'
                                 : 'text-[#b3d4f7] hover:bg-[#043850]'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center justify-between">
                               <span>{model.name}</span>
@@ -330,11 +340,10 @@ export default function ChatInput({
                   handleVoiceToggle();
                 }}
                 disabled={disabled}
-                className={`p-1.5 rounded transition-all disabled:opacity-50 ${
-                  isRecording 
-                    ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50' 
+                className={`p-1.5 rounded transition-all disabled:opacity-50 ${isRecording
+                    ? 'bg-red-500 text-white animate-pulse shadow-lg shadow-red-500/50'
                     : 'text-[#b3d4f7] hover:text-[#66c5fb] hover:bg-[#043850]'
-                }`}
+                  }`}
                 title={isRecording ? 'Stop recording (or press Enter)' : 'Start voice recording'}
               >
                 <Mic className="w-4 h-4" />
@@ -342,27 +351,29 @@ export default function ChatInput({
             </div>
           </div>
 
-          {/* Send Button - OUTSIDE */}
+          {/* Send Button */}
           <button
             type="submit"
             disabled={disabled || (!message.trim() && attachedFiles.length === 0) || isRecording}
-            className="w-10 h-10 rounded-lg text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0"
+            className="w-10 h-10 rounded-xl text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0 active:scale-95"
             style={{
-              background: isRecording 
-                ? 'linear-gradient(135deg, #666 0%, #888 100%)'
+              background: isRecording
+                ? 'linear-gradient(135deg, #555 0%, #777 100%)'
                 : 'linear-gradient(135deg, #3e78c2 0%, #66c5fb 100%)',
-              boxShadow: isRecording ? 'none' : '0 0 15px rgba(62, 120, 194, 0.4)',
+              boxShadow: isRecording ? 'none' : '0 0 20px rgba(62,120,194,0.5)',
             }}
+            onMouseEnter={e => { if (!disabled) e.currentTarget.style.boxShadow = '0 0 32px rgba(62,120,194,0.75)'; }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = isRecording ? 'none' : '0 0 20px rgba(62,120,194,0.5)'; }}
             title={isRecording ? 'Stop recording first' : 'Send message (Enter)'}
           >
             <Send className="w-5 h-5" />
           </button>
         </div>
-        
+
         {/* Helper Text */}
-        <p className="mt-2 text-xs text-[#7fa3d1] text-center">
-          Press <kbd className="px-1 py-0.5 bg-[#032a42] border border-[#043850] rounded text-xs mx-1">Enter</kbd> to send • 
-          Click <Mic className="w-3 h-3 inline" /> to {isRecording ? 'stop' : 'start'} recording
+        <p className="mt-2 text-[10px] text-[#1a3a52] text-center tracking-wide">
+          Press <kbd className="px-1.5 py-0.5 bg-white/[0.04] border border-white/[0.06] rounded text-[10px] mx-0.5">Enter</kbd> to send
+          · Click <Mic className="w-3 h-3 inline mx-0.5" /> to {isRecording ? 'stop' : 'start'} voice
         </p>
       </div>
     </form>
@@ -381,5 +392,4 @@ export default function ChatInput({
 
 
 
- 
- 
+

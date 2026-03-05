@@ -114,7 +114,10 @@ export default function Sidebar({
       <div className="p-3 border-b border-[#043850]">
         <button
           onClick={handleNewChat}
-          className="w-full px-3 py-2 bg-gradient-to-r from-[#3e78c2] to-[#66c5fb] rounded-lg text-white text-sm font-medium hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full px-3 py-2.5 rounded-xl text-white text-sm font-semibold flex items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
+          style={{ background: 'linear-gradient(135deg, #3e78c2, #66c5fb)', boxShadow: '0 0 20px rgba(62,120,194,0.3)' }}
+          onMouseEnter={e => e.currentTarget.style.boxShadow = '0 0 35px rgba(62,120,194,0.55)'}
+          onMouseLeave={e => e.currentTarget.style.boxShadow = '0 0 20px rgba(62,120,194,0.3)'}
         >
           <Plus className="w-4 h-4" />
           New Chat
@@ -192,32 +195,33 @@ export default function Sidebar({
 
           {/* User Menu Dropdown */}
           {showUserMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#032a42] border border-[#043850] rounded-lg shadow-lg z-50">
+            <div className="absolute bottom-full left-0 right-0 mb-2 rounded-xl shadow-2xl z-50 overflow-hidden animate-slide-in"
+              style={{ background: 'rgba(2,30,53,0.92)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.07)' }}>
               <div className="p-2">
                 {/* User Info */}
-                <div className="px-3 py-2 border-b border-[#043850]">
-                  <p className="text-xs text-[#7fa3d1] mb-1">Signed in as</p>
-                  <p className="text-sm text-white font-medium truncate">
-                    {getUserEmail()}
-                  </p>
+                <div className="px-3 py-2.5 mb-1">
+                  <p className="text-[10px] uppercase tracking-wider text-[#2a4a6b] font-semibold mb-1">Signed in as</p>
+                  <p className="text-sm text-white font-medium truncate">{getUserEmail()}</p>
                 </div>
 
-                {/* API Keys Button */}
+                <div className="h-px bg-white/[0.05] mx-2 mb-1" />
+
+                {/* API Keys */}
                 <button
                   onClick={() => { setShowUserMenu(false); setShowApiKeyModal(true); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-[#b3d4f7] hover:bg-[#043850] rounded transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-[#7fa3d1] hover:text-white hover:bg-white/[0.05] rounded-lg transition-all"
                 >
-                  <KeyRound className="w-4 h-4" />
+                  <KeyRound className="w-4 h-4 text-blue-400" />
                   <span>API Keys</span>
                 </button>
 
-                {/* Logout Button */}
+                {/* Logout */}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#b3d4f7] hover:bg-[#043850] rounded transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-400/80 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Logout</span>
+                  <span>Sign out</span>
                 </button>
               </div>
             </div>

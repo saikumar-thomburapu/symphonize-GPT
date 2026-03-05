@@ -195,27 +195,59 @@ export default function ChatInterface({ conversationId }) {
             </div>
           </div>
         ) : messages.length === 0 && !isStreaming ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center max-w-md px-4">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                onLoadedMetadata={(e) => {
-                e.target.currentTime = 1; // ensures full duration playback
-                }}
-                className="w-20 h-20 mx-auto mb-6 opacity-60 rounded-full"
-              >
-                <source src="  /videos/symphonize_logo_animation.mp4" type="video/mp4" />
-              </video>
-              <h3 className="text-2xl font-bold text-white mb-3">Start Your Conversation</h3>
-              <p className="text-[#b3d4f7] text-lg mb-2">
-                {availableModels.find(m => m.id === selectedModel)?.name || 'AI'}
-              </p>
-              <p className="text-[#7fa3d1] text-sm">
-                Ask questions, upload files, and get intelligent responses.
+          <div className="flex items-center justify-center h-full px-4">
+            <div className="text-center max-w-lg w-full animate-fade-in">
+
+              {/* Logo / Icon */}
+              <div className="relative inline-block mb-6">
+                <div className="w-20 h-20 rounded-2xl mx-auto overflow-hidden border border-white/10 shadow-2xl animate-float"
+                  style={{ boxShadow: '0 0 40px rgba(62,120,194,0.3)' }}>
+                  <video autoPlay loop muted playsInline preload="auto"
+                    className="w-full h-full object-cover"
+                    onLoadedMetadata={(e) => { e.target.currentTime = 1; }}>
+                    <source src="/videos/symphonize_logo_animation.mp4" type="video/mp4" />
+                  </video>
+                </div>
+                {/* Glow ring */}
+                <div className="absolute inset-0 rounded-2xl blur-xl opacity-30"
+                  style={{ background: 'radial-gradient(circle, #3e78c2, transparent)' }} />
+              </div>
+
+              <h3 className="text-3xl font-bold mb-2 tracking-tight"
+                style={{ background: 'linear-gradient(90deg, #fff 0%, #b3d4f7 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Start Your Conversation
+              </h3>
+
+              {/* Model badge */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm mb-6"
+                style={{ background: 'rgba(62,120,194,0.12)', border: '1px solid rgba(62,120,194,0.25)' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[#7fa3d1] font-medium">
+                  {availableModels.find(m => m.id === selectedModel)?.name || 'AI Assistant'}
+                </span>
+              </div>
+
+              {/* Suggestion chips */}
+              <div className="grid grid-cols-2 gap-2 text-left">
+                {[
+                  { icon: '💡', text: 'Explain quantum computing simply' },
+                  { icon: '🐍', text: 'Write a Python web scraper' },
+                  { icon: '✍️', text: 'Write an email to my team' },
+                  { icon: '📊', text: 'Compare SQL vs NoSQL databases' },
+                ].map((s) => (
+                  <button
+                    key={s.text}
+                    onClick={() => handleSend(s.text)}
+                    className="suggestion-chip flex items-start gap-2.5 p-3.5 rounded-xl"
+                  >
+                    <span className="text-base shrink-0">{s.icon}</span>
+                    <span className="text-xs leading-relaxed">{s.text}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="text-xs text-[#2a4a6b] mt-4">
+                Ask anything, upload files, or click a suggestion above
               </p>
             </div>
           </div>

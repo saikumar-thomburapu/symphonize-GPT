@@ -20,6 +20,7 @@ export default function LoginForm() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
+  const [shake, setShake] = useState(false);
   
   // ✅ FORGOT PASSWORD STATES
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -50,7 +51,11 @@ export default function LoginForm() {
     e.preventDefault();
     setGeneralError('');
     
-    if (!validate()) return;
+    if (!validate()) {
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+      return;
+    }
     
     setLoading(true);
     
@@ -60,6 +65,8 @@ export default function LoginForm() {
     } catch (error) {
       console.error('Login error:', error);
       setGeneralError(error.detail || 'Invalid email or password');
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
     } finally {
       setLoading(false);
     }
@@ -285,7 +292,7 @@ if (showForgotPassword) {
 
   // ✅ MAIN LOGIN FORM
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className={`space-y-6 ${shake ? 'animate-shake' : ''}`}>
       {/* Error message */}
       {generalError && (
         <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
