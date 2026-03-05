@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Plus, MessageSquare, Search, LogOut, ChevronDown } from 'lucide-react';
+import { Plus, MessageSquare, Search, LogOut, ChevronDown, KeyRound } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import ConversationItem from '@/components/chat/ConversationItem';
 import { getConversations, createConversation, deleteConversation, logout, getStoredUser } from '@/lib/api';
+import APIKeyModal from '@/components/ui/APIKeyModal';
 
 export default function Sidebar({ 
   currentConversationId, 
@@ -20,6 +21,7 @@ export default function Sidebar({
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const userMenuRef = useRef(null);
 
@@ -200,10 +202,19 @@ export default function Sidebar({
                   </p>
                 </div>
 
+                {/* API Keys Button */}
+                <button
+                  onClick={() => { setShowUserMenu(false); setShowApiKeyModal(true); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-[#b3d4f7] hover:bg-[#043850] rounded transition-colors"
+                >
+                  <KeyRound className="w-4 h-4" />
+                  <span>API Keys</span>
+                </button>
+
                 {/* Logout Button */}
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-[#b3d4f7] hover:bg-[#043850] rounded transition-colors"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-[#b3d4f7] hover:bg-[#043850] rounded transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>
@@ -213,6 +224,12 @@ export default function Sidebar({
           )}
         </div>
       </div>
+
+      {/* API Key Modal */}
+      <APIKeyModal
+        isOpen={showApiKeyModal}
+        onClose={() => setShowApiKeyModal(false)}
+      />
     </>
   );
 

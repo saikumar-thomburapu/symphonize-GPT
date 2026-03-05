@@ -9,14 +9,14 @@ import axios from 'axios';
 function getBackendURL() {
   // If NEXT_PUBLIC_API_URL is set to 'auto', detect it
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  
+
   if (envUrl && envUrl !== 'auto') {
     return envUrl;
   }
-  
+
   // Auto-detect based on current browser location
   const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  
+
   // Detect if on 154 or 161
   if (hostname.includes('154') || hostname === 'localhost') {
     // Development (154)
@@ -25,7 +25,7 @@ function getBackendURL() {
     // Production (161)
     return `http://${hostname}:8000`;
   }
-  
+
   // Fallback
   return 'http://localhost:8000';
 }
@@ -44,7 +44,7 @@ const apiClient = axios.create({
   timeout: 30000,
 });
 
- 
+
 
 
 // Request interceptor - Add auth token
@@ -265,13 +265,13 @@ export async function sendMessageStream(
 ) {
   try {
     console.log('🚀 Sending message:', { conversationId, message, model, filesCount: files.length });
-    
+
     // Use FormData to send files + text
     const formData = new FormData();
     formData.append('conversation_id', conversationId);
     formData.append('message', message);
     formData.append('model', model);
-    
+
     // Append each file
     if (files && files.length > 0) {
       console.log(`📁 Attaching ${files.length} file(s)...`);
@@ -372,60 +372,60 @@ export function getStoredUser() {
 export async function transcribeAudio(audioBlob, onTranscribe, onError) {
   try {
     console.log('🎤 Starting speech recognition...');
-    
+
     // Use browser's Web Speech API
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    
+
     if (!SpeechRecognition) {
       throw new Error('Speech Recognition not supported in this browser');
     }
 
     const recognition = new SpeechRecognition();
-    
+
     // Configuration
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.language = 'en-US'; // Can be changed to other languages
-    
+
     let transcript = '';
-    
+
     recognition.onstart = () => {
       console.log('🎤 Listening...');
     };
-    
+
     recognition.onresult = (event) => {
       transcript = '';
-      
+
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcriptSegment = event.results[i][0].transcript;
         transcript += transcriptSegment;
-        
+
         if (event.results[i].isFinal) {
           console.log('✓ Final: ' + transcriptSegment);
         } else {
           console.log('~ Interim: ' + transcriptSegment);
         }
       }
-      
+
       if (event.results[event.results.length - 1].isFinal) {
         onTranscribe(transcript);
       }
     };
-    
+
     recognition.onerror = (event) => {
       console.error('❌ Speech recognition error:', event.error);
       onError(`Speech recognition error: ${event.error}`);
     };
-    
+
     recognition.onend = () => {
       console.log('🎤 Speech recognition ended');
     };
-    
+
     // Start recognition
     recognition.start();
-    
+
     return recognition;
-    
+
   } catch (error) {
     console.error('❌ Transcription error:', error);
     onError(error.message);
@@ -440,7 +440,7 @@ export async function sendAudioToBackend(audioBlob) {
   try {
     const formData = new FormData();
     formData.append('audio', audioBlob, 'audio.wav');
-    
+
     const response = await fetch(`${API_BASE_URL}/chat/transcribe`, {
       method: 'POST',
       headers: {
@@ -540,7 +540,7 @@ export async function exportToPDF(conversationId, messages, title = 'Conversatio
       senderEl.style.fontSize = '13px';
       senderEl.style.color = msg.role === 'user' ? '#3e78c2' : '#333333';
       senderEl.style.marginBottom = '8px';
-      
+
       const sender = msg.role === 'user' ? 'You' : 'AI Assistant';
       const time = msg.created_at ? new Date(msg.created_at).toLocaleString() : '';
       senderEl.textContent = `${sender} (${time})`;
@@ -696,7 +696,7 @@ function downloadFile(blob, filename) {
 export async function shareConversation(conversationId, messages, title = 'Conversation') {
   try {
     const text = formatMessagesForExport(messages);
-    
+
     if (navigator.share) {
       await navigator.share({
         title,
@@ -706,7 +706,7 @@ export async function shareConversation(conversationId, messages, title = 'Conve
       // Fallback: Copy to clipboard
       await navigator.clipboard.writeText(text);
     }
-    
+
     return true;
   } catch (error) {
     console.error('❌ Share error:', error);
@@ -725,5 +725,46 @@ export async function copyConversationText(messages) {
   } catch (error) {
     console.error('❌ Copy error:', error);
     throw error;
+  }
+}
+
+// ==================== API KEY MANAGEMENT ====================
+
+/**
+ * Create a new API key
+ */
+export async function createApiKey(keyName, expiresInDays = null) {
+  try {
+    const response = await apiClient.post('/api-keys/', {
+      key_name: keyName,
+      expires_in_days: expiresInDays,
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+}
+
+/**
+ * List all API keys for the current user
+ */
+export async function listApiKeys() {
+  try {
+    const response = await apiClient.get('/api-keys/');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+}
+
+/**
+ * Revoke (delete) an API key
+ */
+export async function revokeApiKey(keyId) {
+  try {
+    await apiClient.delete(`/api-keys/${keyId}`);
+    return true;
+  } catch (error) {
+    throw error.response?.data || error;
   }
 }
